@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Butterflies of Got Ramogi Sacred Forest</title>
+<style>
+:root{--bg:#faf4ea;--card:#fff;--ink:#2a2220;--mute:#6d5f58;--acc:#b5532a;--line:#e6d9c8}
+@media (prefers-color-scheme:dark){:root{--bg:#1a1514;--card:#251e1c;--ink:#f1e8e2;--mute:#b5a59b;--acc:#f0a070;--line:#3a2f2b}}
+*{box-sizing:border-box}
+body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--ink)}
+header{padding:2.5rem 1rem 1rem;text-align:center}
+h1{margin:0;font-size:2rem}
+header p{color:var(--mute);max-width:640px;margin:.5rem auto}
+nav{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;padding:.5rem 1rem}
+button{font:inherit;padding:.4rem .9rem;border:1px solid var(--acc);background:transparent;color:var(--acc);border-radius:99px;cursor:pointer}
+button.on{background:var(--acc);color:var(--bg)}
+input{font:inherit;padding:.4rem .9rem;border:1px solid var(--line);border-radius:99px;background:var(--card);color:var(--ink);min-width:200px}
+main{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;padding:1rem;max-width:1200px;margin:auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.img{height:190px;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:3rem}
+.img img{width:100%;height:100%;object-fit:cover}
+.body{padding:.8rem 1rem 1rem}
+.body h3{margin:0;font-size:1.05rem;font-style:italic}
+.body em{color:var(--mute);font-size:.85rem}
+.body p{font-size:.88rem;line-height:1.45;margin:.5rem 0 0}
+.tag{display:inline-block;font-size:.7rem;color:var(--acc);border:1px solid var(--line);border-radius:99px;padding:.1rem .5rem;margin-top:.5rem}
+footer{text-align:center;color:var(--mute);font-size:.8rem;padding:1.5rem}
+</style>
+</head>
+<body>
+<header>
+<h1>🦋 Butterflies of Got Ramogi Sacred Forest</h1>
+<p>Checklist of butterflies and moths recorded in 1993–1994. Photos and descriptions load from Wikipedia when you open this page online.</p>
+</header>
+<nav id="nav"></nav>
+<main id="grid"></main>
+<footer>Images &amp; text: Wikipedia / Wikimedia Commons, under their respective licences.</footer>
+<script>
+const L={
+"Nymphalidae":["Hypolimnas dubius","Hypolimnas misippus","Charaxes varanes vologese","Charaxes jahlusa kenyensis","Charaxes zoolina neanthes","Charaxes zoolina zoolina","Junonia chorimene","Junonia hierta cebrene","Junonia oenone","Junonia orithya madagascariensis","Junonia sophia infracta","Junonia terea elgiva","Junonia archesia","Neptis morosa","Neptis serena serena","Neptis saclava marpessa","Phalanta eurytis"],
+"Danaidae":["Danaus chrysippus chrysippus","Amauris tartarea tartarea","Amauris albimaculata magnimaculata"],
+"Satyrinae":["Bicyclus anynana anynana","Bicyclus funebris"],
+"Acraeinae":["Acraea esebria esebria","Acraea pseudegina","Acraea bonasia","Acraea solkensis","Acraea eponina eponina","Acraea jodutta","Pardopsis punctatissima"],
+"Pieridae":["Eurema hecabe","Eurema brigitta","Eronia cleodora","Colotis hetaera ankolensis","Colotis euippe complexivus","Colotis danae eupompe","Colotis augurinus","Belenois thysa thysa","Belenois crawshayi","Belenois gidica","Belenois creona severina","Leptosia alcesta inalcesta","Leptosia nupta","Mylothris chloris clarissa","Catopsilia florella"],
+"Tineidae (moth)":["Paraclystis divisus"],
+"Lycaenidae":["Zizeeria knysna","Cacyreus lingeus"]
+};
+const grid=document.getElementById("grid"),nav=document.getElementById("nav");
+const cards=[];
+for(const [fam,list] of Object.entries(L))for(const sp of list){
+  const d=document.createElement("div");d.className="card";d.dataset.g=fam;d.dataset.s=(sp+" "+fam).toLowerCase();
+  d.innerHTML=`<div class="img">🦋</div><div class="body"><h3>${sp}</h3><em>${fam}</em><p>Loading description…</p><span class="tag">${fam}</span></div>`;
+  grid.appendChild(d);cards.push({d,sp});
+}
+async function wiki(term){
+  const u="https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=1&gsrsearch="+encodeURIComponent(term)+"&prop=pageimages|extracts&piprop=thumbnail&pithumbsize=500&exintro=1&explaintext=1&exsentences=3";
+  const j=await (await fetch(u)).json();
+  return j.query?Object.values(j.query.pages)[0]:null;
+}
+async function load({d,sp}){
+  const bin=sp.split(" ").slice(0,2).join(" ");
+  let p=null;
+  try{
+    p=await wiki('"'+bin+'"');
+    if(!p||!p.thumbnail){const alt=await wiki(bin+" butterfly");p=alt||p;}
+  }catch(e){}
+  const t=d.querySelector("p");
+  if(p){
+    if(p.thumbnail){const im=document.createElement("img");im.src=p.thumbnail.source;im.alt=sp;im.loading="lazy";d.querySelector(".img").replaceChildren(im);}
+    t.textContent=p.extract||"No description found.";
+  }else t.textContent="Description unavailable (check your internet connection).";
+}
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){io.unobserve(e.target);load(cards.find(c=>c.d===e.target));}}),{rootMargin:"300px"});
+cards.forEach(c=>io.observe(c.d));
+let f="all";
+const q=document.createElement("input");q.placeholder="Search…";
+function mk(label,val){const b=document.createElement("button");b.textContent=label;b.dataset.f=val;if(val=="all")b.className="on";
+  b.onclick=()=>{nav.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");f=val;filt()};nav.appendChild(b)}
+mk("All","all");Object.keys(L).forEach(k=>mk(k,k));nav.appendChild(q);
+function filt(){const s=q.value.toLowerCase();cards.forEach(({d})=>{d.style.display=(f=="all"||d.dataset.g==f)&&d.dataset.s.includes(s)?"":"none"})}
+q.oninput=filt;
+</script>
+</body>
+</html>
